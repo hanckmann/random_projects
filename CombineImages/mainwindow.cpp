@@ -3,6 +3,7 @@
 
 #include <cmath>
 
+#include <QFileInfo>
 #include <QFileDialog>
 #include <QString>
 #include <QSize>
@@ -11,7 +12,8 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow)
+    ui(new Ui::MainWindow),
+    target_folder("")
 {
     ui->setupUi(this);
 }
@@ -21,23 +23,67 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_pushButton_clicked()
+void MainWindow::on_buttonSetTargetFolder_clicked()
 {
-    QStringList files = QFileDialog::getOpenFileNames(this,
-                                                      "Open images",
-                                                      "./",
-                                                      "Image Files (*.png *.jpg *.bmp)");
-    sortFiles(files);
-    combineImages();
+    // Ask for target folder
+    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
+                                                    "/home",
+                                                    QFileDialog::ShowDirsOnly
+                                                    | QFileDialog::DontResolveSymlinks);
+    // Sanity check
+    if(dir=="")
+        return;
+
+    // Save the target folder in memory
+    target_folder.setPath(dir);
+
+    // Update status
+    QString label("Target folder: ");
+    label += target_folder.absolutePath();
+    ui->label->setText(label);
 }
 
-void MainWindow::sortFiles(const QStringList& files)
+void MainWindow::on_buttonSelectPictures_clicked()
 {
+    // Ask for the images to combine
+    QStringList files = QFileDialog::getOpenFileNames(this,
+                                                      "Open images",
+                                                      "/home",
+                                                      "Image Files (*.png *.jpg *.bmp)");
+    // If there are no images selected, stop
+    if(files.size() <= 0)
+        return;
+
+    // If no target folder set, use the folder of the input images
+    if(target_folder == QDir(""))
+        target_folder = QFileInfo(files.at(1)).absoluteDir();
+
+    // Update status
+    ui->progressBar->setMaximum(files.size()*2);
+    ui->label->setText(target_folder.absolutePath());
+
+    // Sort the files on filesize
+    QList<QString> file_list = sortFiles(files);
+
+    // Combine the files
+    combineImages(file_list);
+}
+
+QList<QString> MainWindow::sortFiles(const QStringList& files)
+{
+    QList<QString> file_list;
+    QList<int> width_list;
     QStringList lof = files;
+
+    // Update status
     ui->label->setText("Checking file sizes.");
+    // Sort (remaining) images
     while(lof.size() > 0) {
+        // Open image
         QImage img(lof.first());
+        // Determine the width (smallest image side)
         int w = std::min(img.width(),img.height());
+        // Sort the images based on the width (largest first)
         int index = 0;
         while(index < width_list.size()) {
             if(w > width_list.at(index))
@@ -48,38 +94,45 @@ void MainWindow::sortFiles(const QStringList& files)
         file_list.insert(index,lof.first());
         width_list.insert(index,w);
         lof.removeFirst();
+
+        // Update states
+        ui->progressBar->setValue(ui->progressBar->value()+1);
     }
-    int i = 0;
+    return file_list;
 }
 
-void MainWindow::combineImages()
+void MainWindow::combineImages(QList<QString>& file_list)
 {
     int count = 1;
     while(file_list.size() > 2) {
-        QString str;
+        QString label;
         if(file_list.size() > 1) {
             QString file1 = file_list.first();
-            file_list.removeFirst();
-            width_list.removeFirst();
             QString file2 = file_list.first();
             file_list.removeFirst();
-            width_list.removeFirst();
+            file_list.removeFirst();
             QString file3;
-            file3 = "combined_" + QString::number(count) + ".jpg" ;
+            file3 = target_folder.absolutePath();
+            file3 += "/combined_" + QString::number(count) + ".jpg" ;
             QImage img;
-            img = combineImage(file1, file2);
+            img = mergeImages(file1, file2);
             img.save(file3);
-            str = "Combined " + file1 + " and " + file2 + " to " + file3;
+            label = "Combined " + file1 + " and " + file2 + " to " + file3;
+            ui->progressBar->setValue(ui->progressBar->value()+2);
         } else {
-            str = "There was 1 file unprocessed: " + file_list.first();
+            label = "There was 1 file unprocessed: " + QFileInfo(file_list.first()).fileName();
         }
-        ui->label->setText(str);
+        ui->label->setText(label);
         ++count;
     }
+
+    if(file_list.size() > 1)
+        ui->label->setText("Finished.");
+    ui->progressBar->setValue(ui->progressBar->maximum());
 }
 
 
-QImage MainWindow::combineImage(const QString& file1, const QString& file2)
+QImage MainWindow::mergeImages(const QString& file1, const QString& file2)
 {
     // Load images
     QImage img1(file1);
