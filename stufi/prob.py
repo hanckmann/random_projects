@@ -13,8 +13,8 @@ while (remain > 0):
 	monthCounter = monthCounter + 1 
 	remain = remain - betaal
 	remain = remain * (1 + (rente1/12))
-	print("M:",monthCounter," R:",remain)
+	print(" M:" + str(monthCounter) + " R:" + str(remain))
 	
-print("Months: " , monthCounter)
-print("Remain: " , remain)
-print("Total : " , monthCounter*betaal-remain)
+print("Months: " + str(monthCounter))
+print("Remain: " + str(remain))
+print("Total : " + str(monthCounter*betaal-remain))
