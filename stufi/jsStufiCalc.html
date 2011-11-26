@@ -19,28 +19,29 @@
     <TR>
       <TD>1)</TD>
       <TD>Lening:</TD>
-      <TD><INPUT TYPE=text NAME=lening SIZE=12 onChange="calculate()"></TD>
+      <!--<TD><INPUT TYPE=text NAME=lening SIZE=12 onChange="calculate()"></TD>-->
+      <TD><INPUT TYPE=text NAME=lening SIZE=12"></TD>
     </TR>
     <TR>
       <TD>2)</TD>
       <TD>Rente (op jaarbasis):</TD>
-      <TD><INPUT TYPE=text NAME=ibgrente SIZE=12 onChange="calculate()"></TD>
+      <TD><INPUT TYPE=text NAME=ibgrente SIZE=12"></TD>
     </TR>
     <TR>
       <TD>3)</TD>
       <TD>Aflossing per maand:</TD>
-      <TD><INPUT TYPE=text NAME=aflossing SIZE=12 onChange="calculate()"></TD>
+      <TD><INPUT TYPE=text NAME=aflossing SIZE=12"></TD>
     </TR>
     <TR><TD COLSPAN=3><BIG><B>Extra aflossing info:</B></BIG></TD></TR>
     <TR>
       <TD>4)</TD>
       <TD>Extra betaling per maand:</TD>
-      <TD><INPUT TYPE=text NAME=extra SIZE=12 onChange="calculate()"></TD>
+      <TD><INPUT TYPE=text NAME=extra SIZE=12"></TD>
     </TR>
     <TR>
       <TD>5)</TD>
       <TD>Rente bij de bank (op jaarbasis):</TD>
-      <TD><INPUT TYPE=text NAME=bankrente SIZE=12 onChange="calculate()"></TD>
+      <TD><INPUT TYPE=text NAME=bankrente SIZE=12"></TD>
     </TR>
     <TR><TD COLSPAN=3>
       <BIG><B>
@@ -93,17 +94,17 @@
   this script defines the calculate() function called by the event
   handlers in the form.
 -->
-<SCRIPT LANGUAGE="JavaScript">
+<SCRIPT LANGUAGE="javascript">
 function calculate() {
     // Get the user's input from the form. Assume it is all valid.
     // Convert interest from a percentage to a decimal, and convert from
     // an annual rate to a monthly rate. Convert payment period in years
     // to the number of monthly payments.
-    var lening = document.loandata.lening.value;
-    var ibgrente = document.loandata.ibgrente.value / 100 / 12;
-    var aflossing = document.loandata.aflossing.value;
-    var extra = document.loandata.extra.value;
-    var bankrente = document.loandata.bankrente.value / 100 / 12;
+    var lening = document.leninginfo.lening.value;
+    var ibgrente = document.leninginfo.ibgrente.value / 100 / 12;
+    var aflossing = document.leninginfo.aflossing.value;
+    var extra = document.leninginfo.extra.value;
+    var bankrente = document.leninginfo.bankrente.value / 100 / 12;
 
 	var rest = 0;
 	var maanden = 0;
@@ -112,33 +113,33 @@ function calculate() {
 	rest = lening;
 	maanden = 0;
 	
-	
-	
-	while (remain > 0){
-		document.loandata.a_tijd.value = maanden;
+	while (rest > 0){
 		maanden = maanden + 1;
 		rest = rest * (1 + ibgrente);
 		rest = rest - aflossing;
 	}
-	
-	document.loandata.a_tijd.value = maanden;
-	document.loandata.a_totaal.value = maanden * aflossing + rest;
 
+	document.leninginfo.a_tijd.value = "bla2";
+
+
+	document.leninginfo.a_tijd.value = maanden;
+	document.leninginfo.a_totaal.value = maanden * aflossing + rest;
+/*
 	// Bereken de kosten bij minimale aflossing
 	rest = lening;
 	maanden = 0;
 	
 	
 	
-	while (remain > 0){
-		document.loandata.a_tijd.value = maanden;
+	while (rest > 0){
+		document.leninginfo.a_tijd.value = maanden;
 		maanden = maanden + 1;
 		rest = rest * (1 + ibgrente);
 		rest = rest - (aflossing - extra);
 	}
 	
-	document.loandata.b_tijd.value = maanden;
-	document.loandata.b_totaal.value = maanden * (aflossing + extra) + rest;
+	document.leninginfo.b_tijd.value = maanden;
+	document.leninginfo.b_totaal.value = maanden * (aflossing + extra) + rest;
 
 
 	// Bereken de kosten bij terug betalen en extra banksparen
@@ -146,8 +147,8 @@ function calculate() {
 	maanden = 0;
 	var gespaard = 0;
 	
-	while (remain > 0){
-		document.loandata.a_tijd.value = maanden;
+	while (rest > gespaard){
+		document.leninginfo.a_tijd.value = maanden;
 		maanden = maanden + 1;
 		rest = rest * (1 + ibgrente);
 		rest = rest - (aflossing - extra);
@@ -156,14 +157,10 @@ function calculate() {
 
 	}
 	
-	document.loandata.c_tijd.value = maanden;
-	document.loandata.c_gespaard.value = gespaard;
-	document.loandata.c_totaal.value = (maanden * (aflossing + extra) + rest - gespaard;
-
-
-
+	document.leninginfo.c_tijd.value = maanden;
+	document.leninginfo.c_gespaard.value = gespaard;
+	document.leninginfo.c_totaal.value = (maanden * (aflossing + extra) + rest - gespaard;
 /*
-
 
     // Now compute the monthly payment figure, using esoteric math.
     var x = Math.pow(1 + interest, payments);
@@ -174,17 +171,17 @@ function calculate() {
         (monthly != Number.POSITIVE_INFINITY) &&
         (monthly != Number.NEGATIVE_INFINITY)) {
 
-        document.loandata.payment.value = round(monthly);
-        document.loandata.totaal.value = round(monthly * payments)
-        document.loandata.totaalinterest.value = 
+        document.leninginfo.payment.value = round(monthly);
+        document.leninginfo.totaal.value = round(monthly * payments)
+        document.leninginfo.totaalinterest.value = 
             round((monthly * payments) - principal);
     }
     // Otherwise, the user's input was probably invalid, so don't
     // display anything.
     else {
-        document.loandata.payment.value = "";
-        document.loandata.totaal.value = "";
-        document.loandata.totaalinterest.value = "";
+        document.leninginfo.payment.value = "";
+        document.leninginfo.totaal.value = "";
+        document.leninginfo.totaalinterest.value = "";
     }
 */
 }
