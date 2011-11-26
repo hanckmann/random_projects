@@ -13,44 +13,77 @@
   event handlers. These specify strings of JavaScript code to be
   executed when the user enters data or clicks on a button. 
 -->
-<FORM NAME="loandata">
+<FORM NAME="leninginfo">
   <TABLE>
-    <TR><TD COLSPAN=3><BIG><B>Enter Loan Information:</B></BIG></TD></TR>
+    <TR><TD COLSPAN=3><BIG><B>IBGroep info:</B></BIG></TD></TR>
     <TR>
       <TD>1)</TD>
-      <TD>Amount of the loan (any currency):</TD>
-      <TD><INPUT TYPE=text NAME=principal SIZE=12 onChange="calculate()"></TD>
+      <TD>Lening:</TD>
+      <TD><INPUT TYPE=text NAME=lening SIZE=12 onChange="calculate()"></TD>
     </TR>
     <TR>
       <TD>2)</TD>
-      <TD>Annual percentage rate of interest:</TD>
-      <TD><INPUT TYPE=text NAME=interest SIZE=12 onChange="calculate()"></TD>
+      <TD>Rente (op jaarbasis):</TD>
+      <TD><INPUT TYPE=text NAME=ibgrente SIZE=12 onChange="calculate()"></TD>
     </TR>
     <TR>
       <TD>3)</TD>
-      <TD>Repayment period in years:</TD>
-      <TD><INPUT TYPE=text NAME=years SIZE=12 onChange="calculate()"></TD>
+      <TD>Aflossing per maand:</TD>
+      <TD><INPUT TYPE=text NAME=aflossing SIZE=12 onChange="calculate()"></TD>
     </TR>
-    <TR><TD COLSPAN=3>
-      <BIG><B>
-        <INPUT TYPE=button VALUE="Compute" onClick="calculate()">
-        Payment Information:
-      </B></BIG>
-    </TD></TR>
+    <TR><TD COLSPAN=3><BIG><B>Extra aflossing info:</B></BIG></TD></TR>
     <TR>
       <TD>4)</TD>
-      <TD>Your monthly payment will be:</TD>
-      <TD><INPUT TYPE=text NAME=payment SIZE=12></TD>
+      <TD>Extra betaling per maand:</TD>
+      <TD><INPUT TYPE=text NAME=extra SIZE=12 onChange="calculate()"></TD>
     </TR>
     <TR>
       <TD>5)</TD>
-      <TD>Your total payment will be:</TD>
-      <TD><INPUT TYPE=text NAME=total SIZE=12></TD>
+      <TD>Rente bij de bank (op jaarbasis):</TD>
+      <TD><INPUT TYPE=text NAME=bankrente SIZE=12 onChange="calculate()"></TD>
+    </TR>
+    <TR><TD COLSPAN=3>
+      <BIG><B>
+        <INPUT TYPE=button VALUE="Bereken" onClick="calculate()">
+      </B></BIG>
+    </TD></TR>
+    <TR><TD COLSPAN=3><BIG><B>Kosten overzicht bij minimale aflossing:</B></BIG></TD></TR>
+    <TR>
+      <TD>A)</TD>
+      <TD>Aflossingstijd (in maanden):</TD>
+      <TD><INPUT TYPE=text NAME=a_tijd SIZE=12></TD>
     </TR>
     <TR>
-      <TD>6)</TD>
-      <TD>Your total interest payments will be:</TD>
-      <TD><INPUT TYPE=text NAME=totalinterest SIZE=12></TD>
+      <TD>B)</TD>
+      <TD>totaale kosten lening:</TD>
+      <TD><INPUT TYPE=text NAME=a_totaal SIZE=12></TD>
+    </TR>
+    <TR><TD COLSPAN=3><BIG><B>Kosten overzicht bij extra aflossing:</B></BIG></TD></TR>
+    <TR>
+      <TD>A)</TD>
+      <TD>Aflossingstijd (in maanden):</TD>
+      <TD><INPUT TYPE=text NAME=b_tijd SIZE=12></TD>
+    </TR>
+    <TR>
+      <TD>B)</TD>
+      <TD>totaale kosten lening:</TD>
+      <TD><INPUT TYPE=text NAME=b_totaal SIZE=12></TD>
+    </TR>
+    <TR><TD COLSPAN=3><BIG><B>Kosten overzicht bij minimale aflossing en extra banksparen (als het gespaarde bedrag wordt gebruikt om zo snel mogelijk de lening af te lossen):</B></BIG></TD></TR>
+    <TR>
+      <TD>A)</TD>
+      <TD>Aflossingstijd (in maanden):</TD>
+      <TD><INPUT TYPE=text NAME=c_tijd SIZE=12></TD>
+    </TR>
+    <TR>
+      <TD>B)</TD>
+      <TD>Gespaard bedrag (incl. rente):</TD>
+      <TD><INPUT TYPE=text NAME=c_gespaard SIZE=12></TD>
+    </TR>
+    <TR>
+      <TD>C)</TD>
+      <TD>totaale kosten lening:</TD>
+      <TD><INPUT TYPE=text NAME=c_totaal SIZE=12></TD>
     </TR>
   </TABLE>
 </FORM>
@@ -66,9 +99,71 @@ function calculate() {
     // Convert interest from a percentage to a decimal, and convert from
     // an annual rate to a monthly rate. Convert payment period in years
     // to the number of monthly payments.
-    var principal = document.loandata.principal.value;
-    var interest = document.loandata.interest.value / 100 / 12;
-    var payments = document.loandata.years.value * 12;
+    var lening = document.loandata.lening.value;
+    var ibgrente = document.loandata.ibgrente.value / 100 / 12;
+    var aflossing = document.loandata.aflossing.value;
+    var extra = document.loandata.extra.value;
+    var bankrente = document.loandata.bankrente.value / 100 / 12;
+
+	var rest = 0;
+	var maanden = 0;
+
+	// Bereken de kosten bij minimale aflossing
+	rest = lening;
+	maanden = 0;
+	
+	
+	
+	while (remain > 0){
+		document.loandata.a_tijd.value = maanden;
+		maanden = maanden + 1;
+		rest = rest * (1 + ibgrente);
+		rest = rest - aflossing;
+	}
+	
+	document.loandata.a_tijd.value = maanden;
+	document.loandata.a_totaal.value = maanden * aflossing + rest;
+
+	// Bereken de kosten bij minimale aflossing
+	rest = lening;
+	maanden = 0;
+	
+	
+	
+	while (remain > 0){
+		document.loandata.a_tijd.value = maanden;
+		maanden = maanden + 1;
+		rest = rest * (1 + ibgrente);
+		rest = rest - (aflossing - extra);
+	}
+	
+	document.loandata.b_tijd.value = maanden;
+	document.loandata.b_totaal.value = maanden * (aflossing + extra) + rest;
+
+
+	// Bereken de kosten bij terug betalen en extra banksparen
+	rest = lening;
+	maanden = 0;
+	var gespaard = 0;
+	
+	while (remain > 0){
+		document.loandata.a_tijd.value = maanden;
+		maanden = maanden + 1;
+		rest = rest * (1 + ibgrente);
+		rest = rest - (aflossing - extra);
+		gespaard = gespaard * (1 + bankrente);
+		gespaard = gespaard + extra;
+
+	}
+	
+	document.loandata.c_tijd.value = maanden;
+	document.loandata.c_gespaard.value = gespaard;
+	document.loandata.c_totaal.value = (maanden * (aflossing + extra) + rest - gespaard;
+
+
+
+/*
+
 
     // Now compute the monthly payment figure, using esoteric math.
     var x = Math.pow(1 + interest, payments);
@@ -80,17 +175,18 @@ function calculate() {
         (monthly != Number.NEGATIVE_INFINITY)) {
 
         document.loandata.payment.value = round(monthly);
-        document.loandata.total.value = round(monthly * payments)
-        document.loandata.totalinterest.value = 
+        document.loandata.totaal.value = round(monthly * payments)
+        document.loandata.totaalinterest.value = 
             round((monthly * payments) - principal);
     }
     // Otherwise, the user's input was probably invalid, so don't
     // display anything.
     else {
         document.loandata.payment.value = "";
-        document.loandata.total.value = "";
-        document.loandata.totalinterest.value = "";
+        document.loandata.totaal.value = "";
+        document.loandata.totaalinterest.value = "";
     }
+*/
 }
 
 // This simple method rounds a number to two decimal places.
