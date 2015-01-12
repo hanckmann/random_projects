@@ -3,8 +3,8 @@
 
 #include <cmath>
 
-#include <QFileInfo>
 #include <QFileDialog>
+#include <QFileInfo>
 #include <QString>
 #include <QSize>
 #include <QMatrix>
@@ -12,8 +12,7 @@
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
-    ui(new Ui::MainWindow),
-    target_folder("")
+    ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 }
@@ -23,67 +22,49 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_buttonSetTargetFolder_clicked()
+void MainWindow::on_pushButton_clicked()
 {
-    // Ask for target folder
-    QString dir = QFileDialog::getExistingDirectory(this, tr("Open Directory"),
-                                                    "/home",
-                                                    QFileDialog::ShowDirsOnly
-                                                    | QFileDialog::DontResolveSymlinks);
-    // Sanity check
-    if(dir=="")
-        return;
-
-    // Save the target folder in memory
-    target_folder.setPath(dir);
-
-    // Update status
-    QString label("Target folder: ");
-    label += target_folder.absolutePath();
-    ui->label->setText(label);
-}
-
-void MainWindow::on_buttonSelectPictures_clicked()
-{
-    // Ask for the images to combine
     QStringList files = QFileDialog::getOpenFileNames(this,
                                                       "Open images",
-                                                      "/home",
+                                                      "./",
                                                       "Image Files (*.png *.jpg *.bmp)");
-    // If there are no images selected, stop
-    if(files.size() <= 0)
-        return;
+    if(ui->rbCombine->isChecked())
+        combine(files);
+    else if(ui->rbSplit->isChecked())
+        split(files);
+    else
+        ui->lineEditTargetFolder->setText("ERROR IN FUNCTION SELECTION!");
 
-    // If no target folder set, use the folder of the input images
-    if(target_folder == QDir(""))
-        target_folder = QFileInfo(files.at(1)).absoluteDir();
-
-    // Update status
-    ui->progressBar->setMaximum(files.size()*2);
-    ui->label->setText(target_folder.absolutePath());
-
-    // Sort the files on filesize
-    QList<QString> file_list = sortFiles(files);
-
-    // Combine the files
-    combineImages(file_list);
 }
 
-QList<QString> MainWindow::sortFiles(const QStringList& files)
+void MainWindow::combine(const QStringList& files)
 {
-    QList<QString> file_list;
-    QList<int> width_list;
-    QStringList lof = files;
+    if(files.count() > 0)
+    {
+        // Show the target folder
+        QFileInfo fileinfo(files.at(0));
+        ui->lineEditTargetFolder->setText(fileinfo.absolutePath());
+        int maxValue = files.count() + (int)floor(files.count()/2) - 1;
+        ui->progressBar->setRange( 0, maxValue );
+        ui->progressBar->setValue(0);
 
-    // Update status
+        sortFiles(files);
+        combineImages();
+    }
+    else
+    {
+        ui->lineEditTargetFolder->setText("No valid files selected");
+        ui->label->setText("No valid files selected");
+    }
+}
+
+void MainWindow::sortFiles(const QStringList& files)
+{
+    QStringList lof = files;
     ui->label->setText("Checking file sizes.");
-    // Sort (remaining) images
     while(lof.size() > 0) {
-        // Open image
         QImage img(lof.first());
-        // Determine the width (smallest image side)
         int w = std::min(img.width(),img.height());
-        // Sort the images based on the width (largest first)
         int index = 0;
         while(index < width_list.size()) {
             if(w > width_list.at(index))
@@ -94,45 +75,42 @@ QList<QString> MainWindow::sortFiles(const QStringList& files)
         file_list.insert(index,lof.first());
         width_list.insert(index,w);
         lof.removeFirst();
-
-        // Update states
         ui->progressBar->setValue(ui->progressBar->value()+1);
     }
-    return file_list;
+    int i = 0;
 }
 
-void MainWindow::combineImages(QList<QString>& file_list)
+void MainWindow::combineImages()
 {
     int count = 1;
     while(file_list.size() > 2) {
-        QString label;
+        QString str;
         if(file_list.size() > 1) {
             QString file1 = file_list.first();
+            file_list.removeFirst();
+            width_list.removeFirst();
             QString file2 = file_list.first();
             file_list.removeFirst();
-            file_list.removeFirst();
+            width_list.removeFirst();
             QString file3;
-            file3 = target_folder.absolutePath();
-            file3 += "/combined_" + QString::number(count) + ".jpg" ;
+            file3 = "combined_" + QString::number(count) + ".jpg" ;
             QImage img;
-            img = mergeImages(file1, file2);
+            img = combineImage(file1, file2);
             img.save(file3);
-            label = "Combined " + file1 + " and " + file2 + " to " + file3;
-            ui->progressBar->setValue(ui->progressBar->value()+2);
+            QFileInfo fi1(file1);
+            QFileInfo fi2(file2);
+            QFileInfo fi3(file3);
+            str = "Combined " + fi1.baseName() + " and " + fi2.baseName() + " to " + fi3.baseName();
         } else {
-            label = "There was 1 file unprocessed: " + QFileInfo(file_list.first()).fileName();
+            str = "There was 1 file unprocessed: " + file_list.first();
         }
-        ui->label->setText(label);
+        ui->label->setText(str);
+        ui->progressBar->setValue(ui->progressBar->value()+1);
         ++count;
     }
-
-    if(file_list.size() > 1)
-        ui->label->setText("Finished.");
-    ui->progressBar->setValue(ui->progressBar->maximum());
 }
 
-
-QImage MainWindow::mergeImages(const QString& file1, const QString& file2)
+QImage MainWindow::combineImage(const QString& file1, const QString& file2)
 {
     // Load images
     QImage img1(file1);
@@ -162,6 +140,102 @@ QImage MainWindow::mergeImages(const QString& file1, const QString& file2)
 
     paint.drawImage(0,0,img1);
     paint.drawImage(size1.width(),0,img2);
+
+    paint.end();
+
+    // return new image
+    return img3;
+}
+
+void MainWindow::split(const QStringList& files)
+{
+    if(files.count() > 0)
+    {
+        // Show the target folder
+        QFileInfo fileinfo(files.at(0));
+        ui->lineEditTargetFolder->setText(fileinfo.absolutePath());
+        int maxValue = files.count() + (int)floor(files.count()/2) - 1;
+        ui->progressBar->setRange( 0, maxValue );
+        ui->progressBar->setValue(0);
+
+
+        QStringList lof = files;
+        while(lof.size() > 0) {
+            file_list.append(lof.first());
+            lof.removeFirst();
+            ui->progressBar->setValue(ui->progressBar->value()+1);
+        }
+
+
+        splitImages();
+    }
+    else
+    {
+        ui->lineEditTargetFolder->setText("No valid files selected");
+        ui->label->setText("No valid files selected");
+    }
+}
+
+void MainWindow::splitImages()
+{
+    int count = 1;
+    while(file_list.size() > 0) {
+        QString str;
+
+        QString file1 = file_list.first();
+        QFileInfo fileinfo(file1);
+        file_list.removeFirst();
+        QString file2;
+        file2 = "split_1_" + fileinfo.baseName() + ".jpg" ;
+        QString file3;
+        file3 = "split_2_" + fileinfo.baseName() + ".jpg" ;
+        QImage img1;
+        QImage img2;
+        img1 = splitImage(file1, 0);
+        img2 = splitImage(file1, 1);
+        img1.save(file2);
+        img2.save(file3);
+        QFileInfo fi1(file1);
+        QFileInfo fi2(file2);
+        QFileInfo fi3(file3);
+        str = "Splitted " + fi1.baseName() + " into " + fi2.baseName() + " and " + fi3.baseName();
+
+        ui->label->setText(str);
+        ui->progressBar->setValue(ui->progressBar->value()+1);
+        ++count;
+    }
+}
+
+QImage MainWindow::splitImage(const QString& file1, const int& part)
+{
+    // Load images
+    QImage img1(file1);
+
+    // Determine size
+    QSize size1 = img1.size();
+
+    // Determine if rotation is needed (and rotate)
+    QMatrix matrix;
+    matrix.scale(1,1);
+    matrix.rotate(90);
+    if (size1.width() > size1.height())
+        img1 = img1.transformed(matrix);
+    size1 = img1.size();
+
+    // Split
+    int y = part * (int)std::ceil(img1.height() / 2);
+    QImage img2;
+    img2 = img1.copy(0,y,img1.width(),(int)std::ceil(size1.height() / 2));
+
+    // Prepare new image and copy relevant part
+    QSize size23(size1.width(), (int)std::ceil(size1.height() / 2));
+    QImage img3(size23,QImage::Format_ARGB32);
+
+    QPainter paint(&img3);
+    QRect rect(0,0,size23.width(),size23.height());
+    paint.fillRect(rect,QColor("white"));
+
+    paint.drawImage(0,0,img2);
 
     paint.end();
 

@@ -4,7 +4,8 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
+QT       += core
+QT       += gui declarative
 
 TARGET = CombineImages
 TEMPLATE = app
